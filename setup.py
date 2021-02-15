@@ -1,11 +1,11 @@
 from setuptools import setup
 
 
-setup(name='QCGym', version='0.0.1', packages=['QCGym'], license='MIT',
+setup(name='QCGym', version='v0.0.2-alpha', packages=['QCGym'], license='MIT',
       description='A Collection of Gym environments used in Quantum control',
       author='Onkar Deshpande', author_email='onkardeshpande07@gmail.com',
       url='https://github.com/oddgr8/QCGym',
-      download_url='https://github.com/oddgr8/QCGym/archive/v0.0.1-alpha.tar.gz',
+      download_url='https://github.com/oddgr8/QCGym/archive/v0.0.2-alpha.tar.gz',
       keywords=['Quantum', 'Control', 'Gym', 'RL'],
       # And any other dependencies foo needs,
       install_requires=['gym', 'numpy'],
