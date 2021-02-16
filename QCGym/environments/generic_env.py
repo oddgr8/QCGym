@@ -96,7 +96,7 @@ class GenericEnv(gym.Env):
 
             U = expm(-1j*self.dt*H/H_CROSS)
 
-            if not np.allclose(np.matmul(U, U.T), np.eye(4)):
+            if not np.allclose(np.matmul(U, np.conjugate(U.T)), np.eye(4)):
                 logger.error(
                     f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
             if not np.isclose(np.abs(np.linalg.det(U)), 1):

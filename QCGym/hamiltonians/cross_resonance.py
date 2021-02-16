@@ -1,6 +1,7 @@
 from QCGym.hamiltonians.generic_hamiltonian import GenericHamiltonian
 from QCGym.interpolators.identity import IdentityInterpolator
 import numpy as np
+from math import cos, sin
 import logging
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,13 @@ class CrossResonance(GenericHamiltonian):
         self.smoothing = smoothing
         self.num_qubits = num_qubits
 
-    def hamil_eval(self, params):
-        return np.eye(4)
+    def hamil_eval(self, params=[1,1,1,0,1]):
+        pauli_x = np.array([[0, 1], [1, 0]])
+        pauli_y = np.array([[0, -1j], [1j, 0]])
+        pauli_z = np.array([[1, 0], [0, -1]])
+        [sigma, wxx, w1,w2, phi] = params
+        H = (sigma*wxx/(4*(w1-w2)))*(cos(phi)*np.kron(pauli_z, pauli_x) + sin(phi)*np.kron(pauli_z, pauli_y))
+        return H
 
     def __call__(self, control_params):
         '''
