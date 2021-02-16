@@ -43,3 +43,6 @@ class CrossResonance(GenericHamiltonian):
         control_params = np.array(
             [self.smoothing(x) for x in control_params]).T  # Here it is (steps, num_params)
         return np.array([self.hamil_eval(x) for x in control_params])
+
+    def __str__(self):
+        return f"Cross Res. w/{self.smoothing}"

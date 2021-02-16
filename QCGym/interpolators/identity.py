@@ -30,4 +30,9 @@ class IdentityInterpolator(object):
             arr : ndarray of shape(x*mesh,)
                 Array of interpolated control parameters
         """
-        return np.repeat(params, mesh, axis=0)
+        if len(params.shape) != 1:
+            logger.critical(f"Received params with shape {params.shape}")
+        return np.repeat(params, self.mesh, axis=0)
+
+    def __str__(self):
+        return f"IdentityInterp(mesh={self.mesh})"

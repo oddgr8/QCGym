@@ -41,21 +41,28 @@ class GenericEnv(gym.Env):
         self.fidelity = fidelity
         self.dt = dt
 
+        logger.info(
+            f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}")
+
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(4, 4))
-        self.action_space = spaces.Tuple((spaces.Box(low=-np.inf, high=np.inf, shape=1),  # Capital Omega1
-                                          (spaces.Box(low=-np.inf, high=np.inf, shape=1),  # Capital Omega2
-                                           spaces.Box(
-                                              low=-np.inf, high=np.inf, shape=1),  # Small omega1
-                                           spaces.Box(
-                                              low=-np.inf, high=np.inf, shape=1),  # Small omega2
-                                           spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=1),  # phi1
-                                           spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=1),  # phi2
+        self.action_space = spaces.Tuple((spaces.Box(low=-np.inf, high=np.inf, shape=(1,)),  # Capital Omega1
+                                          spaces.Box(
+                                              low=-np.inf, high=np.inf, shape=(1,)),  # Capital Omega2
+                                          spaces.Box(
+                                              low=-np.inf, high=np.inf, shape=(1,)),  # Small omega1
+                                          spaces.Box(
+                                              low=-np.inf, high=np.inf, shape=(1,)),  # Small omega2
+                                          spaces.Box(
+                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi1
+                                          spaces.Box(
+                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi2
                                           ))
 
-        self.actions_so_far=[]
+        self.actions_so_far = []
+
+    def is_hermitian(self, H):
+        return np.all(H == np.conjugate(H).T)
 
     def step(self, action):
         """
@@ -78,15 +85,30 @@ class GenericEnv(gym.Env):
                 Additional debugging Info
         """
         self.actions_so_far.append(action)
+        logger.info(f"Action#{len(self.actions_so_far)}={action}")
 
         if len(self.actions_so_far) == self.max_timesteps:
-            U=expm(-1j*self.dt*np.sum(self.hamiltonian(np.array(self.actions_so_far).T), axis=0)/H_CROSS)
+            H = np.sum(self.hamiltonian(
+                np.array(self.actions_so_far).T), axis=0)
+
+            if not self.is_hermitian(H):
+                logger.error(f"{H} is not")
+
+            U = expm(-1j*self.dt*H/H_CROSS)
+
+            if not np.allclose(np.matmul(U, U.T), np.eye(4)):
+                logger.error(
+                    f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
+            if not np.isclose(np.linalg.det(U)/U.shape[0], 1):
+                logger.error(f"Det Invalid-{np.linalg.det(U)}")
+
             return len(self.actions_so_far), self.fidelity(U, self.target), True, {}
 
         return len(self.actions_so_far), 0, False, {}
 
     def reset(self):
-        self.actions_so_far=[]
+        self.actions_so_far = []
+        logger.info("GenEnv Reset")
 
     def render(self, mode='human'):
         pass

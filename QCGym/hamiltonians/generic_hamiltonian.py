@@ -26,3 +26,6 @@ class GenericHamiltonian(object):
         '''
         raise NotImplementedError(
             "This is a hamiltonian base class. Use other specialized hamiltonians.")
+
+    def __str__(self):
+        return f"Gen Hamilotonian-{self.smoothing}"
