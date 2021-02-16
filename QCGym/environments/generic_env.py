@@ -99,8 +99,8 @@ class GenericEnv(gym.Env):
             if not np.allclose(np.matmul(U, U.T), np.eye(4)):
                 logger.error(
                     f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
-            if not np.isclose(np.linalg.det(U)/U.shape[0], 1):
-                logger.error(f"Det Invalid-{np.linalg.det(U)}")
+            if not np.isclose(np.abs(np.linalg.det(U)), 1):
+                logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
 
             return len(self.actions_so_far), self.fidelity(U, self.target), True, {}
 
