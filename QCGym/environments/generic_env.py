@@ -1,9 +1,8 @@
 from QCGym.hamiltonians.cross_resonance import CrossResonance
 from QCGym.fidelities.trace_fidelity import TraceFidelity
 import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
 import numpy as np
+from gym import spaces
 from scipy.linalg import expm
 import logging
 logger = logging.getLogger(__name__)
@@ -46,18 +45,7 @@ class GenericEnv(gym.Env):
 
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(4, 4))
-        self.action_space = spaces.Tuple((spaces.Box(low=-np.inf, high=np.inf, shape=(1,)),  # Capital Omega1
-                                          spaces.Box(
-                                              low=-np.inf, high=np.inf, shape=(1,)),  # Capital Omega2
-                                          spaces.Box(
-                                              low=-np.inf, high=np.inf, shape=(1,)),  # Small omega1
-                                          spaces.Box(
-                                              low=-np.inf, high=np.inf, shape=(1,)),  # Small omega2
-                                          spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi1
-                                          spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi2
-                                          ))
+        self.action_space = self.hamiltonian.action_space
 
         self.actions_so_far = []
 
@@ -70,8 +58,8 @@ class GenericEnv(gym.Env):
 
         Parameters
         ----------
-            action : 6-touble of doubles
-                (Omega1, Omega2, omega1, omega2, phi1, phi2)
+            action : 4-touble of doubles
+                (Omega1, Omega2, phi1, phi2)
 
         Returns
         -------

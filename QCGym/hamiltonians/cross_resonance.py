@@ -1,7 +1,7 @@
 from QCGym.hamiltonians.generic_hamiltonian import GenericHamiltonian
 from QCGym.interpolators.identity import IdentityInterpolator
 import numpy as np
-from math import cos, sin
+from gym import spaces
 import logging
 logger = logging.getLogger(__name__)
 
@@ -16,18 +16,51 @@ class CrossResonance(GenericHamiltonian):
             How to interpolate parameters inside timesteps
         num_qubits : int
             Number of qubits we are dealing with
+        num_qubits : double
+            (Time of each step)/mesh_size
     """
 
-    def __init__(self, smoothing=IdentityInterpolator(10), num_qubits=2):
+    def __init__(self, smoothing=IdentityInterpolator(10), num_qubits=2, dt=1e-9):
         self.smoothing = smoothing
         self.num_qubits = num_qubits
+        self.dt = dt
 
-    def hamil_eval(self, params=[1,1,1,0,1]):
+        self.action_space = spaces.Tuple((spaces.Box(low=-5, high=5, shape=(1,)),  # Capital Omega1
+                                          spaces.Box(
+                                              low=-5, high=5, shape=(1,)),  # Capital Omega2
+                                          spaces.Box(
+                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi1
+                                          spaces.Box(
+                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi2
+                                          ))
+
+        self.omega1 = 1
+        self.omega2 = 2
+        self.omega1rf = self.omega2
+        self.omega2rf = self.omega1
+        self.omegaxx = 1.5
         pauli_x = np.array([[0, 1], [1, 0]])
         pauli_y = np.array([[0, -1j], [1j, 0]])
         pauli_z = np.array([[1, 0], [0, -1]])
-        [sigma, wxx, w1,w2, phi] = params
-        H = (sigma*wxx/(4*(w1-w2)))*(cos(phi)*np.kron(pauli_z, pauli_x) + sin(phi)*np.kron(pauli_z, pauli_y))
+        I = np.eye(2)
+        self.sigma1z = np.kron(pauli_z, I)
+        self.sigma1x = np.kron(pauli_x, I)
+        self.sigma2z = np.kron(I, pauli_z)
+        self.sigma2x = np.kron(I, pauli_x)
+        self.sigmaxx = np.kron(pauli_x, pauli_x)
+
+        self.steps_so_far = 0  # Used by Hamil_eval
+
+    def hamil_eval(self, params):
+        [Omega1, Omega2, phi1, phi2] = params
+        t = self.steps_so_far*self.dt
+
+        H = (0.5*self.omega1*self.sigma1z) + \
+            (Omega1*np.cos(self.omega1rf*t + phi1)*self.sigma1x) + \
+            (0.5*self.omega2*self.sigma2z) + \
+            (Omega2*np.cos(self.omega2rf*t+phi2)*self.sigma2x) + \
+            (0.5*self.omegaxx*self.sigmaxx)
+        self.steps_so_far += 1
         return H
 
     def __call__(self, control_params):
