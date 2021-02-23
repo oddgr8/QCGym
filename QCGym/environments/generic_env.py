@@ -43,8 +43,7 @@ class GenericEnv(gym.Env):
         logger.info(
             f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}")
 
-        self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(4, 4))
+        self.observation_space = spaces.Box(low=0, high=100, shape=(1,))
         self.action_space = self.hamiltonian.action_space
 
         self.actions_so_far = []
@@ -90,13 +89,14 @@ class GenericEnv(gym.Env):
             if not np.isclose(np.abs(np.linalg.det(U)), 1):
                 logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
 
-            return len(self.actions_so_far), self.fidelity(U, self.target), True, {}
+            return np.array([len(self.actions_so_far)]), self.fidelity(U, self.target), True, {}
 
-        return len(self.actions_so_far), 0, False, {}
+        return np.array([len(self.actions_so_far)]), 0, False, {}
 
     def reset(self):
         self.actions_so_far = []
         logger.info("GenEnv Reset")
+        return np.array([0])
 
     def render(self, mode='human'):
         pass
