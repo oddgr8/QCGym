@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-setup(name='QCGym', version='v0.0.3-alpha', packages=['QCGym'], license='MIT',
+setup(name='QCGym', version='v0.0.4-alpha', packages=['QCGym'], license='MIT',
       description='A Collection of Gym environments used in Quantum control',
       author='Onkar Deshpande', author_email='onkardeshpande07@gmail.com',
       url='https://github.com/oddgr8/QCGym',
