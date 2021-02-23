@@ -16,7 +16,7 @@ class CrossResonance(GenericHamiltonian):
             How to interpolate parameters inside timesteps
         num_qubits : int
             Number of qubits we are dealing with
-        num_qubits : double
+        dt : double
             (Time of each step)/mesh_size
     """
 
@@ -25,13 +25,9 @@ class CrossResonance(GenericHamiltonian):
         self.num_qubits = num_qubits
         self.dt = dt
 
-        self.action_space = spaces.Tuple((spaces.Box(low=-5, high=5, shape=(1,)),  # Capital Omega1
+        self.action_space = spaces.Tuple((spaces.Box(low=-5, high=5, shape=(2,)),  # Omega
                                           spaces.Box(
-                                              low=-5, high=5, shape=(1,)),  # Capital Omega2
-                                          spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi1
-                                          spaces.Box(
-                                              low=-np.pi, high=np.pi, shape=(1,)),  # phi2
+                                              low=-2*np.pi, high=2*np.pi, shape=(2,)),  # phi
                                           ))
 
         self.omega1 = 1
@@ -40,7 +36,7 @@ class CrossResonance(GenericHamiltonian):
         self.omega2rf = self.omega1
         self.omegaxx = 1.5
         pauli_x = np.array([[0, 1], [1, 0]])
-        pauli_y = np.array([[0, -1j], [1j, 0]])
+        # pauli_y = np.array([[0, -1j], [1j, 0]])
         pauli_z = np.array([[1, 0], [0, -1]])
         I = np.eye(2)
         self.sigma1z = np.kron(pauli_z, I)
@@ -49,10 +45,11 @@ class CrossResonance(GenericHamiltonian):
         self.sigma2x = np.kron(I, pauli_x)
         self.sigmaxx = np.kron(pauli_x, pauli_x)
 
-        self.steps_so_far = 0  # Used by Hamil_eval
-
     def hamil_eval(self, params):
-        [Omega1, Omega2, phi1, phi2] = params
+        Omega1 = params[0, 0]
+        Omega2 = params[0, 1]
+        phi1 = params[1, 0]
+        phi2 = params[1, 1]
         t = self.steps_so_far*self.dt
 
         H = (0.5*self.omega1*self.sigma1z) + \
@@ -65,11 +62,11 @@ class CrossResonance(GenericHamiltonian):
 
     def __call__(self, control_params):
         '''
-        Returns Hamiltonian over time
+        Returns Hamiltonians over time
 
         Parameters
         ----------
-            control_params : ndarray of shape(num_params, timesteps)
+            control_params : iterable of shape(timesteps, ...shape of action_space)
                 Control Parameters from which to generate Hamiltonians
             num_qubits : int
                 Number of qubits we are dealing with
@@ -79,9 +76,8 @@ class CrossResonance(GenericHamiltonian):
             hamiltonians : ndarray of shape(time_steps*mesh, ...shape_of_hamiltonian)
                 Interpolated Hamiltonians
         '''
-        control_params = np.array(
-            [self.smoothing(x) for x in control_params]).T  # Here it is (steps, num_params)
-        return np.array([self.hamil_eval(x) for x in control_params])
+        self.steps_so_far = 0  # Used by Hamil_eval
+        return np.array([self.hamil_eval(x) for x in self.smoothing(control_params)])
 
     def __str__(self):
         return f"Cross Res. w/{self.smoothing}"

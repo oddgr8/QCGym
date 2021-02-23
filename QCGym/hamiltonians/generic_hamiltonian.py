@@ -10,6 +10,7 @@ class GenericHamiltonian(object):
         smoothing : Interpolator
             How to interpolate parameters inside timesteps
     """
+    action_space = None
 
     def __init__(self, smoothing=IdentityInterpolator(10)):
         self.smoothing = smoothing
@@ -19,7 +20,7 @@ class GenericHamiltonian(object):
         Returns Hamiltonian over time
 
                 Parameters:
-                        control_params : ndarray of shape(num_params, timesteps)
+                        control_params : iterable of shape(timesteps, ...shape of action_space)
 
                 Returns:
                         hamiltonians : ndarray of shape(time_steps*mesh, ...shape_of_hamiltonian)

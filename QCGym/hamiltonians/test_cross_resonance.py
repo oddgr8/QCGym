@@ -7,8 +7,9 @@ class TestCrossRes(unittest.TestCase):
 
     def test_shape(self):
         H = CrossResonance()
-        input = np.array([[1, 1], [2, 2], [3, 3], [4, 4]])
-        self.assertEqual(H(input).shape, (20, 4, 4))
+        inp = [([1, 2], [10, 20]), ([4, 5], [40, 50]),
+               ([7, 8], [70, 80]), ([1, 4], [10, 40])]
+        self.assertEqual(H(inp).shape, (40, 4, 4))
 
 
 if __name__ == '__main__':

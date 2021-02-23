@@ -32,6 +32,8 @@ class GenericEnv(gym.Env):
             Timestep_size/mesh
     """
     metadata = {'render.modes': ['human']}
+    observation_space = spaces.Discrete(1000)
+    reward_range = (float(0), float(1))
 
     def __init__(self, max_timesteps=30, target=CNOT, hamiltonian=CrossResonance(), fidelity=TraceFidelity(), dt=0.1):
         self.max_timesteps = max_timesteps
@@ -43,7 +45,6 @@ class GenericEnv(gym.Env):
         logger.info(
             f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}")
 
-        self.observation_space = spaces.Box(low=0, high=100, shape=(1,))
         self.action_space = self.hamiltonian.action_space
 
         self.actions_so_far = []
@@ -57,8 +58,8 @@ class GenericEnv(gym.Env):
 
         Parameters
         ----------
-            action : 4-touble of doubles
-                (Omega1, Omega2, phi1, phi2)
+            action : ActionSpace
+                Object in Hamiltonian.action_space
 
         Returns
         -------
@@ -75,11 +76,10 @@ class GenericEnv(gym.Env):
         logger.info(f"Action#{len(self.actions_so_far)}={action}")
 
         if len(self.actions_so_far) == self.max_timesteps:
-            H = np.sum(self.hamiltonian(
-                np.array(self.actions_so_far).T), axis=0)
+            H = np.sum(self.hamiltonian(self.actions_so_far), axis=0)
 
             if not self.is_hermitian(H):
-                logger.error(f"{H} is not")
+                logger.error(f"{H} is not Hermitian")
 
             U = expm(-1j*self.dt*H/H_CROSS)
 
