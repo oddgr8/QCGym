@@ -57,6 +57,9 @@ class CrossResonance(GenericHamiltonian):
             (0.5*self.omega2*self.sigma2z) + \
             (Omega2*np.cos(self.omega2rf*t+phi2)*self.sigma2x) + \
             (0.5*self.omegaxx*self.sigmaxx)
+
+        if not np.all(H == np.conjugate(H).T):
+            logger.error(f"{H} is not hermitian with params {params}")
         self.steps_so_far += 1
         return H
 

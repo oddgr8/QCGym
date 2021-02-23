@@ -49,9 +49,6 @@ class GenericEnv(gym.Env):
 
         self.actions_so_far = []
 
-    def is_hermitian(self, H):
-        return np.all(H == np.conjugate(H).T)
-
     def step(self, action):
         """
         Take one action for one timestep
@@ -78,8 +75,9 @@ class GenericEnv(gym.Env):
         if len(self.actions_so_far) == self.max_timesteps:
             H = np.sum(self.hamiltonian(self.actions_so_far), axis=0)
 
-            if not self.is_hermitian(H):
-                logger.error(f"{H} is not Hermitian")
+            if not np.all(H == np.conjugate(H).T):
+                logger.error(
+                    f"{H} is not Hermitian with actions as {np.array(self.actions_so_far)}")
 
             U = expm(-1j*self.dt*H/H_CROSS)
 
@@ -89,14 +87,14 @@ class GenericEnv(gym.Env):
             if not np.isclose(np.abs(np.linalg.det(U)), 1):
                 logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
 
-            return np.array([len(self.actions_so_far)]), self.fidelity(U, self.target), True, {}
+            return len(self.actions_so_far), self.fidelity(U, self.target), True, {}
 
-        return np.array([len(self.actions_so_far)]), 0, False, {}
+        return len(self.actions_so_far), 0, False, {}
 
     def reset(self):
         self.actions_so_far = []
         logger.info("GenEnv Reset")
-        return np.array([0])
+        return 0
 
     def render(self, mode='human'):
         pass
