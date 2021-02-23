@@ -42,12 +42,16 @@ class GenericEnv(gym.Env):
         self.fidelity = fidelity
         self.dt = dt
 
-        logger.info(
-            f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}")
+        self.name = f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}"
+
+        logger.info(self.name)
 
         self.action_space = self.hamiltonian.action_space
 
         self.actions_so_far = []
+
+    def __str__(self):
+        return self.name
 
     def step(self, action):
         """

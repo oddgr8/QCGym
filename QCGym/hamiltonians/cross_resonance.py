@@ -25,9 +25,9 @@ class CrossResonance(GenericHamiltonian):
         self.num_qubits = num_qubits
         self.dt = dt
 
-        self.action_space = spaces.Tuple((spaces.Box(low=-5, high=5, shape=(2,)),  # Omega
+        self.action_space = spaces.Tuple((spaces.Box(low=-500, high=500, shape=(2,)),  # Omega
                                           spaces.Box(
-                                              low=-2*np.pi, high=2*np.pi, shape=(2,)),  # phi
+                                              low=-100*np.pi, high=100*np.pi, shape=(2,)),  # phi
                                           ))
 
         self.omega1 = 1
