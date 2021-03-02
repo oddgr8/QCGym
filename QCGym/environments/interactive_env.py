@@ -1,4 +1,4 @@
-from QCGym.hamiltonians.cross_resonance import CrossResonance
+from QCGym.hamiltonians.int_cross_resonance import InteractiveCrossResonance
 from QCGym.fidelities.trace_fidelity import TraceFidelity
 import gym
 import numpy as np
@@ -14,9 +14,9 @@ CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 H_CROSS = 1
 
 
-class GenericEnv(gym.Env):
+class InteractiveEnv(gym.Env):
     """
-    Gym Environment for Quantum Control.
+    Interactive Gym Environment for Quantum Control.
 
     Parameters
     ----------
@@ -32,17 +32,21 @@ class GenericEnv(gym.Env):
             Timestep_size/mesh
     """
     metadata = {'render.modes': ['human']}
-    observation_space = spaces.Discrete(1000)
+    observation_space = spaces.Tuple((spaces.Box(low=-np.inf, high=np.inf, shape=(4, 4)),
+                                      spaces.Box(
+                                          low=-np.inf, high=np.inf, shape=(4, 4)),
+                                      spaces.Discrete(1000)))
     reward_range = (float(0), float(1))
 
-    def __init__(self, max_timesteps=30, target=CNOT, hamiltonian=CrossResonance(), fidelity=TraceFidelity(), dt=0.1):
+    def __init__(self, max_timesteps=30, target=CNOT, hamiltonian=InteractiveCrossResonance(), fidelity=TraceFidelity(), dt=0.1):
         self.max_timesteps = max_timesteps
         self.target = target
         self.hamiltonian = hamiltonian
         self.fidelity = fidelity
         self.dt = dt
+        self.U = np.eye(4)
 
-        self.name = f"GenEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}"
+        self.name = f"IntEnv-{max_timesteps}-{CNOT}-{hamiltonian}-{fidelity}-{dt}"
 
         logger.info(self.name)
 
@@ -64,8 +68,8 @@ class GenericEnv(gym.Env):
 
         Returns
         -------
-            observation : int
-                Number of timesteps done
+            observation : ndarray(shape=(4,4)),ndarray(shape=(4,4)),int
+                Real part of state, Imag part of state, Number of timesteps done
             reward : double
                 Returns fidelity on final timestep, zero otherwise
             done : boolean
@@ -73,33 +77,38 @@ class GenericEnv(gym.Env):
             info : dict
                 Additional debugging Info
         """
-        print("Action is", action)
         self.actions_so_far.append(action)
         logger.info(f"Action#{len(self.actions_so_far)}={action}")
 
-        if len(self.actions_so_far) == self.max_timesteps:
-            H = np.sum(self.hamiltonian(self.actions_so_far), axis=0)
+        done = len(self.actions_so_far) == self.max_timesteps
 
-            if not np.all(H == np.conjugate(H).T):
-                logger.error(
-                    f"{H} is not Hermitian with actions as {np.array(self.actions_so_far)}")
+        H = np.sum(self.hamiltonian(action, done=done), axis=0)
 
-            U = expm(-1j*self.dt*H/H_CROSS)
+        if not np.all(H == np.conjugate(H).T):
+            logger.error(
+                f"{H} is not Hermitian with actions as {np.array(self.actions_so_far)}")
 
-            if not np.allclose(np.matmul(U, np.conjugate(U.T)), np.eye(4)):
-                logger.error(
-                    f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
-            if not np.isclose(np.abs(np.linalg.det(U)), 1):
-                logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
+        self.U = expm(-1j*self.dt*H/H_CROSS) @ self.U
 
-            return len(self.actions_so_far), self.fidelity(U, self.target), True, {}
+        if not np.allclose(np.matmul(self.U, np.conjugate(self.U.T)), np.eye(4)):
+            logger.error(
+                f"Unitary Invalid-Difference is{np.matmul(self.U,self.U.T)-np.eye(4)}")
+        if not np.isclose(np.abs(np.linalg.det(self.U)), 1):
+            logger.error(f"Det Invalid-{np.abs(np.linalg.det(self.U))}")
 
-        return len(self.actions_so_far), 0, False, {}
+        if done:
+            reward = self.fidelity(self.U, self.target)
+        else:
+            reward = 0
+
+        return (np.real(self.U), np.imag(self.U), len(self.actions_so_far)), reward, done, {}
 
     def reset(self):
         self.actions_so_far = []
-        logger.info("GenEnv Reset")
-        return 0
+        self.U = np.eye(4)
+        self.hamiltonian.reset()
+        logger.info("IntEnv Reset")
+        return (np.eye(4), np.zeros((4, 4)), 0)
 
     def render(self, mode='human'):
         pass
