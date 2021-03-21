@@ -20,14 +20,15 @@ class CrossResonance(GenericHamiltonian):
             (Time of each step)/mesh_size
     """
 
-    def __init__(self, smoothing=IdentityInterpolator(10), num_qubits=2, dt=1e-9):
+    def __init__(self, smoothing=IdentityInterpolator(10), num_qubits=2, dt=1e-9, N=5):
         self.smoothing = smoothing
         self.num_qubits = num_qubits
         self.dt = dt
-
-        self.action_space = spaces.Tuple((spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32),  # Omega
-                                          spaces.Box(
-                                              low=-2*np.pi, high=2*np.pi, shape=(2,), dtype=np.float32),  # phi
+        self.N = N
+        self.action_space = spaces.Tuple((spaces.Discrete(self.N),  # Omega1
+                                          spaces.Discrete(self.N),  # Omega2
+                                          spaces.Discrete(self.N),  # phi1
+                                          spaces.Discrete(self.N),  # phi2
                                           ))
 
         self.omega1 = 1
@@ -46,10 +47,10 @@ class CrossResonance(GenericHamiltonian):
         self.sigmaxx = np.kron(pauli_x, pauli_x)
 
     def hamil_eval(self, params):
-        Omega1 = params[0, 0]
-        Omega2 = params[0, 1]
-        phi1 = params[1, 0]
-        phi2 = params[1, 1]
+        Omega1 = (params[0]/(self.N-1) - 0.5)*10
+        Omega2 = (params[1]/(self.N-1) - 0.5)*10
+        phi1 = (params[2]/(self.N-1) - 0.5)*4*np.pi
+        phi2 = (params[3]/(self.N-1) - 0.5)*4*np.pi
         t = self.steps_so_far*self.dt
 
         H = (0.5*self.omega1*self.sigma1z) + \

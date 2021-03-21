@@ -81,30 +81,36 @@ class GenericEnv(gym.Env):
         self.actions_so_far.append(action)
         logger.info(f"Action#{len(self.actions_so_far)}={action}")
 
+        
+        H = np.sum(self.hamiltonian(self.actions_so_far), axis=0)
+
+        if not np.all(H == np.conjugate(H).T):
+            logger.error(
+                f"{H} is not Hermitian with actions as {np.array(self.actions_so_far)}")
+
+        U = expm(-1j*self.dt*H/H_CROSS)
+
+        if not np.allclose(np.matmul(U, np.conjugate(U.T)), np.eye(4)):
+            logger.error(
+                f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
+        if not np.isclose(np.abs(np.linalg.det(U)), 1):
+            logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
+        
+        curr_fidelity = self.fidelity(U, self.target)
+        print(curr_fidelity)
+
+        if curr_fidelity > self.max_fidelity:
+            self.max_fidelity = curr_fidelity
+            self.pulse_seq_best = self.actions_so_far
+        
+        if curr_fidelity>0.9:
+            return len(self.actions_so_far), curr_fidelity, True, {}
+        
         if len(self.actions_so_far) == self.max_timesteps:
-            H = np.sum(self.hamiltonian(self.actions_so_far), axis=0)
-
-            if not np.all(H == np.conjugate(H).T):
-                logger.error(
-                    f"{H} is not Hermitian with actions as {np.array(self.actions_so_far)}")
-
-            U = expm(-1j*self.dt*H/H_CROSS)
-
-            if not np.allclose(np.matmul(U, np.conjugate(U.T)), np.eye(4)):
-                logger.error(
-                    f"Unitary Invalid-Difference is{np.matmul(U,U.T)-np.eye(4)}")
-            if not np.isclose(np.abs(np.linalg.det(U)), 1):
-                logger.error(f"Det Invalid-{np.abs(np.linalg.det(U))}")
-            
-            curr_fidelity = self.fidelity(U, self.target)
-
-            if curr_fidelity > self.max_fidelity:
-                self.max_fidelity = curr_fidelity
-                self.pulse_seq_best = self.actions_so_far
-
             return len(self.actions_so_far), curr_fidelity, True, {}
 
-        return len(self.actions_so_far), 0, False, {}
+        else:
+            return len(self.actions_so_far), curr_fidelity, False, {}
 
     def reset(self):
         self.actions_so_far = []
@@ -115,5 +121,5 @@ class GenericEnv(gym.Env):
         pass
 
     def close(self):
-        # print(self.pulse_seq_best, self.max_fidelity)
-        pulse_plot_bb(self.pulse_seq_best, self.max_fidelity, N)
+        print(self.pulse_seq_best, self.max_fidelity)
+        # pulse_plot_bb(self.pulse_seq_best, self.max_fidelity, N)

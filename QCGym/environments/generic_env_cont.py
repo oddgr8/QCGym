@@ -1,11 +1,11 @@
-from QCGym.hamiltonians.cross_resonance_bb import CrossResonance
+from QCGym.hamiltonians.cross_resonance import CrossResonance
 from QCGym.fidelities.trace_fidelity import TraceFidelity
 import gym
 import numpy as np
 from random import random
 from gym import spaces
 from math import isnan, pi
-from QCGym.util import pulse_plot_bb
+from QCGym.util import pulse_plot
 from scipy.linalg import expm
 import logging
 logger = logging.getLogger(__name__)
@@ -15,7 +15,6 @@ CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 # We use natural units
 H_CROSS = 1
-N = 2
 
 
 class GenericEnv(gym.Env):
@@ -39,7 +38,7 @@ class GenericEnv(gym.Env):
     observation_space = spaces.Discrete(1000)
     reward_range = (float(0), float(1))
 
-    def __init__(self, max_timesteps=30, target=CNOT, hamiltonian=CrossResonance(N=N), fidelity=TraceFidelity(), dt=0.1):
+    def __init__(self, max_timesteps=30, target=CNOT, hamiltonian=CrossResonance(), fidelity=TraceFidelity(), dt=0.1):
         self.max_timesteps = max_timesteps
         self.target = target
         self.hamiltonian = hamiltonian
@@ -75,8 +74,8 @@ class GenericEnv(gym.Env):
             info : dict
                 Additional debugging Info
         """
-        # if isnan(action[0][0]):
-        #     action = [[10*(random()-0.5), 10*(random()-0.5)], [2*pi*(random()-0.5), 2*pi*(random()-0.5)]]
+        if isnan(action[0][0]):
+            action = [[10*(random()-0.5), 10*(random()-0.5)], [2*pi*(random()-0.5), 2*pi*(random()-0.5)]]
 
         self.actions_so_far.append(action)
         logger.info(f"Action#{len(self.actions_so_far)}={action}")
@@ -100,7 +99,7 @@ class GenericEnv(gym.Env):
 
             if curr_fidelity > self.max_fidelity:
                 self.max_fidelity = curr_fidelity
-                self.pulse_seq_best = self.actions_so_far
+                self.action_seq_best = self.actions_so_far
 
             return len(self.actions_so_far), curr_fidelity, True, {}
 
@@ -115,5 +114,4 @@ class GenericEnv(gym.Env):
         pass
 
     def close(self):
-        # print(self.pulse_seq_best, self.max_fidelity)
-        pulse_plot_bb(self.pulse_seq_best, self.max_fidelity, N)
+        pulse_plot(self.pulse_seq_best, self.max_fidelity)
